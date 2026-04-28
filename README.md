@@ -31,20 +31,21 @@
 
 | 指令 | 说明 | 权限 |
 |------|------|------|
-| `/服务器列表` | 查看所有服务器实例及其运行状态 | 管理员 |
-| `/启动服务器 <实例ID>` | 启动指定服务器实例 | 管理员 |
-| `/停止服务器 <实例ID>` | 停止指定服务器实例 | 管理员 |
-| `/重启服务器 <实例ID>` | 重启指定服务器实例 | 管理员 |
+| `/mslx help` | 显示所有可用命令 | 管理员 |
+| `/mslx ser list` | 查看所有服务器实例及其运行状态 | 管理员 |
+| `/mslx ser start <ID>` | 启动指定服务器实例 | 管理员 |
+| `/mslx ser stop <ID>` | 停止指定服务器实例 | 管理员 |
+| `/mslx ser restart <ID>` | 重启指定服务器实例 | 管理员 |
 
 ### 🔗 FRP 隧道控制
 
 | 指令 | 说明 | 权限 |
 |------|------|------|
-| `/隧道列表` | 查看所有 FRP 隧道及其运行状态 | 管理员 |
-| `/隧道详情 <隧道ID>` | 查看指定隧道的代理详情（本地地址 → 远程地址） | 管理员 |
-| `/启动隧道 <隧道ID>` | 启动指定隧道 | 管理员 |
-| `/停止隧道 <隧道ID>` | 停止指定隧道 | 管理员 |
-| `/重启隧道 <隧道ID>` | 重启指定隧道（先停止，等待 1 秒后启动） | 管理员 |
+| `/mslx tun list` | 查看所有 FRP 隧道及其运行状态 | 管理员 |
+| `/mslx tun info <ID>` | 查看指定隧道的代理详情（本地地址 → 远程地址） | 管理员 |
+| `/mslx tun start <ID>` | 启动指定隧道 | 管理员 |
+| `/mslx tun stop <ID>` | 停止指定隧道 | 管理员 |
+| `/mslx tun restart <ID>` | 重启指定隧道（先停止，等待 1 秒后启动） | 管理员 |
 
 > 🔒 **权限说明**：以上所有命令仅限 **管理员** 使用。非管理员用户执行时会收到"权限不足"的提示。请在 AstrBot WebUI → 配置 → 基础配置 中添加用户 ID 到管理员列表。
 
@@ -107,20 +108,36 @@ pip install -r astrbot_plugin_mslx_controller/requirements.txt
 ## 🚀 使用示例
 
 ```
-/服务器列表
+/mslx help
+📖 MSLX 控制器 - 可用命令列表
+
+🖥️ 服务器实例
+  /mslx ser list - 查看所有服务器实例
+  /mslx ser start <ID> - 启动服务器
+  /mslx ser stop <ID> - 停止服务器
+  /mslx ser restart <ID> - 重启服务器
+
+🔗 FRP 隧道
+  /mslx tun list - 查看所有隧道
+  /mslx tun info <ID> - 查看隧道详情
+  /mslx tun start <ID> - 启动隧道
+  /mslx tun stop <ID> - 停止隧道
+  /mslx tun restart <ID> - 重启隧道
+
+/mslx ser list
 📋 当前服务器实例列表:
 1. [1] 我的世界服务器 - 🟢 运行中 (核心: Paper)
 2. [2] 模组服 - 🔴 已停止 (核心: Forge)
 
-/启动服务器 1
+/mslx ser start 1
 ✅ 服务器实例 `1` 启动指令已发送。
 操作成功
 
-/隧道列表
+/mslx tun list
 🔗 当前隧道列表:
 1. [1] 生存服映射 - 🟢 运行中 (服务: mc, 配置: TCP)
 
-/隧道详情 1
+/mslx tun info 1
 隧道 ID 1 详情 - 🟢 运行中
 代理列表:
 - mc-server [TCP]: 本地 127.0.0.1:25565 → 远程 example.com:30000 (备用 无)

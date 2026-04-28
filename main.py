@@ -7,7 +7,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 
 
-@register("mslx_controller", "你的名字", "通过API控制MSLX的服务器和隧道", "1.0.1")
+@register("mslx_controller", "你的名字", "通过API控制MSLX的服务器和隧道", "1.0.2")
 class MSLXAPIController(Star):
     def __init__(self, context: Context, config: Optional[Dict[str, Any]] = None):
         super().__init__(context)
@@ -26,10 +26,34 @@ class MSLXAPIController(Star):
         """检查用户是否为管理员"""
         return event.role == "admin"
 
+    # ==================== 帮助命令 ====================
+    @filter.command("mslx help")
+    async def mslx_help(self, event: AstrMessageEvent):
+        '''显示所有可用命令 (用法: /mslx help)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
+        help_text = (
+            "**📖 MSLX 控制器 - 可用命令列表**\n\n"
+            "**🖥️ 服务器实例**\n"
+            "  `/mslx ser list` - 查看所有服务器实例\n"
+            "  `/mslx ser start <ID>` - 启动服务器\n"
+            "  `/mslx ser stop <ID>` - 停止服务器\n"
+            "  `/mslx ser restart <ID>` - 重启服务器\n\n"
+            "**🔗 FRP 隧道**\n"
+            "  `/mslx tun list` - 查看所有隧道\n"
+            "  `/mslx tun info <ID>` - 查看隧道详情\n"
+            "  `/mslx tun start <ID>` - 启动隧道\n"
+            "  `/mslx tun stop <ID>` - 停止隧道\n"
+            "  `/mslx tun restart <ID>` - 重启隧道\n\n"
+            "💡 提示：所有命令仅限管理员使用。"
+        )
+        yield event.plain_result(help_text)
+
     # ==================== 服务器实例控制 ====================
-    @filter.command("服务器列表")
+    @filter.command("mslx ser list")
     async def list_servers(self, event: AstrMessageEvent):
-        '''获取MSLX服务器实例列表 (用法: /服务器列表)'''
+        '''获取MSLX服务器实例列表 (用法: /mslx ser list)'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
@@ -60,14 +84,14 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
 
-    @filter.command("启动服务器")
+    @filter.command("mslx ser start")
     async def start_server(self, event: AstrMessageEvent, instance_id: str):
-        '''启动服务器实例 (用法: /启动服务器 <实例ID>)'''
+        '''启动服务器实例 (用法: /mslx ser start <实例ID>)'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
         if not instance_id.isdigit():
-            yield event.plain_result("❌ 实例ID必须是数字。请使用 `/服务器列表` 查看ID。")
+            yield event.plain_result("❌ 实例ID必须是数字。请使用 `/mslx ser list` 查看ID。")
             return
         payload = {"id": int(instance_id), "action": "start"}
         try:
@@ -87,9 +111,9 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
 
-    @filter.command("停止服务器")
+    @filter.command("mslx ser stop")
     async def stop_server(self, event: AstrMessageEvent, instance_id: str):
-        '''停止服务器实例 (用法: /停止服务器 <实例ID>)'''
+        '''停止服务器实例 (用法: /mslx ser stop <实例ID>)'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
@@ -114,37 +138,49 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
 
-    @filter.command("重启服务器")
+    @filter.command("mslx ser restart")
     async def restart_server(self, event: AstrMessageEvent, instance_id: str):
-        '''重启服务器实例 (用法: /重启服务器 <实例ID>)'''
+        '''重启服务器实例 (用法: /mslx ser restart <实例ID>) - 先停止，等待20秒后启动'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
         if not instance_id.isdigit():
-            yield event.plain_result("❌ 实例ID必须是数字。请使用 `/服务器列表` 查看ID。")
+            yield event.plain_result("❌ 实例ID必须是数字。请使用 `/mslx ser list` 查看ID。")
             return
-        payload = {"id": int(instance_id), "action": "restart"}
+        yield event.plain_result(f"🔄 正在重启服务器实例 `{instance_id}`，请稍候...")
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(f"{self.api_root}/api/instance/action", json=payload, headers=self.headers)
-            if response.status_code == 200:
-                resp_data = response.json()
-                code = resp_data.get("code")
-                message = resp_data.get("message", "")
-                if code == 200:
-                    yield event.plain_result(f"✅ 服务器实例 `{instance_id}` 重启指令已发送。\n{message}")
+                # 1. 先停止
+                stop_payload = {"id": int(instance_id), "action": "stop"}
+                stop_resp = await client.post(f"{self.api_root}/api/instance/action", json=stop_payload, headers=self.headers)
+                if stop_resp.status_code != 200:
+                    yield event.plain_result(f"❌ 停止服务器实例失败 (HTTP {stop_resp.status_code})，无法继续重启。")
+                    return
+                stop_data = stop_resp.json()
+                if stop_data.get("code") != 200:
+                    yield event.plain_result(f"❌ 停止失败 ({stop_data.get('message', '未知错误')})，无法继续重启。")
+                    return
+                # 等待20秒，确保进程完全退出
+                await asyncio.sleep(20)
+                # 2. 再启动
+                start_payload = {"id": int(instance_id), "action": "start"}
+                start_resp = await client.post(f"{self.api_root}/api/instance/action", json=start_payload, headers=self.headers)
+                if start_resp.status_code == 200:
+                    start_data = start_resp.json()
+                    if start_data.get("code") == 200:
+                        yield event.plain_result(f"✅ 服务器实例 `{instance_id}` 重启完成。\n{start_data.get('message', '启动成功')}")
+                    else:
+                        yield event.plain_result(f"❌ 停止成功但启动失败: {start_data.get('message', '未知错误')}")
                 else:
-                    yield event.plain_result(f"❌ 重启失败 (code={code}): {message}")
-            else:
-                yield event.plain_result(f"❌ API请求失败，HTTP状态码: {response.status_code}")
+                    yield event.plain_result(f"❌ 停止成功但启动失败 (HTTP {start_resp.status_code})，请手动启动。")
         except Exception as e:
             logger.error(e)
-            yield event.plain_result(f"❌ 请求发生错误: {e}")
+            yield event.plain_result(f"❌ 重启服务器时发生错误: {e}")
 
     # ==================== FRP 隧道控制 ====================
-    @filter.command("隧道列表")
+    @filter.command("mslx tun list")
     async def list_tunnels(self, event: AstrMessageEvent):
-        '''获取MSLX隧道列表 (用法: /隧道列表)'''
+        '''获取MSLX隧道列表 (用法: /mslx tun list)'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
@@ -176,14 +212,14 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
 
-    @filter.command("隧道详情")
+    @filter.command("mslx tun info")
     async def tunnel_info(self, event: AstrMessageEvent, tunnel_id: str):
-        '''获取隧道详细信息 (用法: /隧道详情 <隧道ID>)'''
+        '''获取隧道详细信息 (用法: /mslx tun info <隧道ID>)'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
         if not tunnel_id.isdigit():
-            yield event.plain_result("❌ 隧道ID必须是数字。请使用 `/隧道列表` 查看ID。")
+            yield event.plain_result("❌ 隧道ID必须是数字。请使用 `/mslx tun list` 查看ID。")
             return
         try:
             async with httpx.AsyncClient() as client:
@@ -219,9 +255,9 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
 
-    @filter.command("启动隧道")
+    @filter.command("mslx tun start")
     async def start_tunnel(self, event: AstrMessageEvent, tunnel_id: str):
-        '''启动隧道 (用法: /启动隧道 <隧道ID>)'''
+        '''启动隧道 (用法: /mslx tun start <隧道ID>)'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
@@ -242,9 +278,9 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
 
-    @filter.command("停止隧道")
+    @filter.command("mslx tun stop")
     async def stop_tunnel(self, event: AstrMessageEvent, tunnel_id: str):
-        '''停止隧道 (用法: /停止隧道 <隧道ID>)'''
+        '''停止隧道 (用法: /mslx tun stop <隧道ID>)'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
@@ -265,9 +301,9 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
 
-    @filter.command("重启隧道")
+    @filter.command("mslx tun restart")
     async def restart_tunnel(self, event: AstrMessageEvent, tunnel_id: str):
-        '''重启隧道 (用法: /重启隧道 <隧道ID>) - 先停止再启动，中间等待1秒'''
+        '''重启隧道 (用法: /mslx tun restart <隧道ID>) - 先停止再启动，中间等待1秒'''
         if not self._check_admin(event):
             yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
             return
