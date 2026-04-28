@@ -7,7 +7,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 
 
-@register("mslx_controller", "Ankali-Aylina", "通过API控制MSLX的服务器和隧道", "1.0.0")
+@register("mslx_controller", "你的名字", "通过API控制MSLX的服务器和隧道", "1.0.1")
 class MSLXAPIController(Star):
     def __init__(self, context: Context, config: Optional[Dict[str, Any]] = None):
         super().__init__(context)
@@ -15,10 +15,11 @@ class MSLXAPIController(Star):
         self.plugin_config = config or {}
         mslx_config = self.plugin_config.get("mslx_api", {})
         self.api_root = mslx_config.get("api_root", "http://localhost:1027")
-        token = mslx_config.get("api_token", "")
-        if not token:
+        api_key = mslx_config.get("api_token", "")
+        if not api_key:
             logger.warning("[MSLX控制器] API Token 未配置，部分功能将不可用！")
-        self.headers = {"Authorization": f"Bearer {token}"}
+        # 根据 OpenAPI 规范，认证方式为 x-api-key Header
+        self.headers = {"x-api-key": api_key}
         logger.info(f"[MSLX控制器] 已加载配置，API地址: {self.api_root}")
 
     # ==================== 服务器实例控制 ====================

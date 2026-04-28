@@ -85,7 +85,7 @@ pip install -r astrbot_plugin_mslx_controller/requirements.txt
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | `mslx_api.api_root` | `string` | `http://localhost:1027` | MSLX 后端 API 的基础 URL |
-| `mslx_api.api_token` | `string` | `""` | MSLX 的 Bearer Token（必填） |
+| `mslx_api.api_token` | `string` | `""` | MSLX 的 API Key（必填），通过 `x-api-key` Header 传递 |
 
 配置结构如下（[`_conf_schema.json`](_conf_schema.json)）：
 
@@ -93,12 +93,12 @@ pip install -r astrbot_plugin_mslx_controller/requirements.txt
 {
   "mslx_api": {
     "api_root": "http://localhost:1027",
-    "api_token": "your_token_here"
+    "api_token": "your_api_key_here"
   }
 }
 ```
 
-> ⚠️ **注意**：`api_token` 为必填项，未配置时插件会发出警告，且部分功能不可用。
+> ⚠️ **注意**：`api_token` 为必填项，未配置时插件会发出警告，且部分功能不可用。该值通过 HTTP Header `x-api-key` 传递给 MSLX 后端进行认证。
 
 ---
 
