@@ -309,7 +309,7 @@ class MSLXAPIController(Star):
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.api_root}/api/frp/info",
-                    params={"id": int(tunnel_id)},
+                    params={"id": tunnel_id},
                     headers=self.headers
                 )
             if response.status_code == 200:
@@ -325,11 +325,11 @@ class MSLXAPIController(Star):
                 if proxies:
                     msg_lines.append("**代理列表:**")
                     for proxy in proxies:
-                        proxy_name = proxy.get("ProxyName", "未知")
-                        p_type = proxy.get("Type", "未知")
-                        local_addr = proxy.get("LocalAddress", "未知")
-                        remote_main = proxy.get("RemoteAddressMain", "未知")
-                        remote_backup = proxy.get("RemoteAddressBackup", "无")
+                        proxy_name = proxy.get("proxyName", "未知")
+                        p_type = proxy.get("type", "未知")
+                        local_addr = proxy.get("localAddress", "未知")
+                        remote_main = proxy.get("remoteAddressMain", "未知")
+                        remote_backup = proxy.get("remoteAddressBackup", "无")
                         msg_lines.append(
                             f"- {proxy_name} [{p_type}]: 本地 {local_addr} → 远程 {remote_main} (备用 {remote_backup})"
                         )
