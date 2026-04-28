@@ -33,9 +33,11 @@
 |------|------|------|
 | `/mslx help` | 显示所有可用命令 | 管理员 |
 | `/mslx ser list` | 查看所有服务器实例及其运行状态 | 管理员 |
+| `/mslx ser info <ID>` | 查看指定服务器实例的详细信息 | 管理员 |
 | `/mslx ser start <ID>` | 启动指定服务器实例 | 管理员 |
 | `/mslx ser stop <ID>` | 停止指定服务器实例 | 管理员 |
 | `/mslx ser restart <ID>` | 重启指定服务器实例 | 管理员 |
+| `/mslx player <ID>` | 查看指定服务器实例的在线玩家 | 管理员 |
 
 ### 🔗 FRP 隧道控制
 
@@ -55,7 +57,7 @@
 
 ### 方法一：AstrBot 市场（推荐）
 
-在 AstrBot 管理面板的 **插件市场** 中搜索 `mslxbot` 并安装。
+在 AstrBot 管理面板的 **插件市场** 中搜索 `mslx_controller` 并安装。
 
 ### 方法二：手动安装
 

@@ -6,6 +6,12 @@
 
 - **命令格式优化**：将 `/mslx` 后的中文子命令改为英文缩写（如 `/mslx ser restart`），方便快速输入。
 - **新增 `/mslx help` 命令**：显示所有可用命令的帮助列表。
+- **新增 `/mslx ser info <ID>` 命令**：查询单个服务器实例的详细信息（调用 `/api/instance/info`）。
+- **新增 `/mslx player <ID>` 命令**：查询指定服务器实例的在线玩家列表（调用 `/api/instance/players/online/{id}`）。
+
+### 🐛 修复
+
+- **修复隧道详情字段解析**：修正 `tunnel_info` 方法中 `isRunning` 和 `proxies` 字段的大小写及嵌套层级，与 OpenAPI 规范保持一致。
 
 ### 📝 文档
 

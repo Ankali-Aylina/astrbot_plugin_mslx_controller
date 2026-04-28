@@ -37,9 +37,11 @@ class MSLXAPIController(Star):
             "**📖 MSLX 控制器 - 可用命令列表**\n\n"
             "**🖥️ 服务器实例**\n"
             "  `/mslx ser list` - 查看所有服务器实例\n"
+            "  `/mslx ser info <ID>` - 查看服务器实例详情\n"
             "  `/mslx ser start <ID>` - 启动服务器\n"
             "  `/mslx ser stop <ID>` - 停止服务器\n"
-            "  `/mslx ser restart <ID>` - 重启服务器\n\n"
+            "  `/mslx ser restart <ID>` - 重启服务器\n"
+            "  `/mslx player <ID>` - 查看在线玩家\n\n"
             "**🔗 FRP 隧道**\n"
             "  `/mslx tun list` - 查看所有隧道\n"
             "  `/mslx tun info <ID>` - 查看隧道详情\n"
@@ -80,6 +82,54 @@ class MSLXAPIController(Star):
                 yield event.plain_result(reply)
             else:
                 yield event.plain_result(f"❌ 获取服务器列表失败，HTTP状态码: {response.status_code}")
+        except Exception as e:
+            logger.error(e)
+            yield event.plain_result(f"❌ 请求发生错误: {e}")
+
+    @filter.command("mslx ser info")
+    async def server_info(self, event: AstrMessageEvent, instance_id: str):
+        '''获取服务器实例详细信息 (用法: /mslx ser info <实例ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
+        if not instance_id.isdigit():
+            yield event.plain_result("❌ 实例ID必须是数字。请使用 `/mslx ser list` 查看ID。")
+            return
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.api_root}/api/instance/info",
+                    params={"id": int(instance_id)},
+                    headers=self.headers
+                )
+            if response.status_code == 200:
+                resp_data = response.json()
+                if resp_data.get("code") == 200:
+                    inst = resp_data.get("data", {})
+                    if not inst:
+                        yield event.plain_result(f"❌ 未找到实例 ID `{instance_id}` 的信息。")
+                        return
+                    name = inst.get('name', '未命名')
+                    status = "🟢 运行中" if inst.get('status') else "🔴 已停止"
+                    core = inst.get('core', '未知')
+                    msg_lines = [
+                        f"**🖥️ 服务器实例 [{instance_id}] {name}**",
+                        f"状态: {status}",
+                        f"核心: {core}",
+                    ]
+                    # 可选字段
+                    if 'node' in inst:
+                        msg_lines.append(f"节点: {inst.get('node', '未知')}")
+                    if 'createTime' in inst:
+                        msg_lines.append(f"创建时间: {inst.get('createTime', '未知')}")
+                    if 'updateTime' in inst:
+                        msg_lines.append(f"更新时间: {inst.get('updateTime', '未知')}")
+                    reply = "\n".join(msg_lines)
+                    yield event.plain_result(reply)
+                else:
+                    yield event.plain_result(f"❌ API返回错误: {resp_data.get('message', '未知错误')}")
+            else:
+                yield event.plain_result(f"❌ 获取服务器详情失败，HTTP状态码: {response.status_code}")
         except Exception as e:
             logger.error(e)
             yield event.plain_result(f"❌ 请求发生错误: {e}")
@@ -177,6 +227,40 @@ class MSLXAPIController(Star):
             logger.error(e)
             yield event.plain_result(f"❌ 重启服务器时发生错误: {e}")
 
+    @filter.command("mslx player")
+    async def online_players(self, event: AstrMessageEvent, instance_id: str):
+        '''获取服务器在线玩家列表 (用法: /mslx player <实例ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
+        if not instance_id.isdigit():
+            yield event.plain_result("❌ 实例ID必须是数字。请使用 `/mslx ser list` 查看ID。")
+            return
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.api_root}/api/instance/players/online/{int(instance_id)}",
+                    headers=self.headers
+                )
+            if response.status_code == 200:
+                resp_data = response.json()
+                if resp_data.get("code") == 200:
+                    players = resp_data.get("data", [])
+                    if not players:
+                        yield event.plain_result(f"📭 服务器实例 `{instance_id}` 当前没有在线玩家。")
+                    else:
+                        player_list = "\n".join([f"  👤 {p}" for p in players])
+                        yield event.plain_result(
+                            f"**👥 服务器实例 `{instance_id}` 在线玩家 ({len(players)}人)**\n{player_list}"
+                        )
+                else:
+                    yield event.plain_result(f"❌ API返回错误: {resp_data.get('message', '未知错误')}")
+            else:
+                yield event.plain_result(f"❌ 获取在线玩家失败，HTTP状态码: {response.status_code}")
+        except Exception as e:
+            logger.error(e)
+            yield event.plain_result(f"❌ 请求发生错误: {e}")
+
     # ==================== FRP 隧道控制 ====================
     @filter.command("mslx tun list")
     async def list_tunnels(self, event: AstrMessageEvent):
@@ -229,9 +313,13 @@ class MSLXAPIController(Star):
                     headers=self.headers
                 )
             if response.status_code == 200:
-                data = response.json()
-                is_running = data.get("IsRunning", False)
-                proxies = data.get("Proxies", [])
+                resp_data = response.json()
+                if resp_data.get("code") != 200:
+                    yield event.plain_result(f"❌ API返回错误: {resp_data.get('message', '未知错误')}")
+                    return
+                api_data = resp_data.get("data", {})
+                is_running = api_data.get("isRunning", False)
+                proxies = api_data.get("proxies", [])
                 status_text = "🟢 运行中" if is_running else "🔴 已停止"
                 msg_lines = [f"**隧道 ID {tunnel_id} 详情** - {status_text}"]
                 if proxies:
