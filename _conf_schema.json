@@ -1,0 +1,22 @@
+{
+    "mslx_api": {
+        "description": "MSLX 后端 API 配置",
+        "hint": "连接 MSLX 守护进程所需的地址和认证信息",
+        "type": "object",
+        "items": {
+            "api_root": {
+                "description": "API 根地址",
+                "hint": "MSLX 后端 API 的完整基础 URL，例如 http://localhost:1027 或 http://192.168.1.100:1027",
+                "type": "string",
+                "default": "http://localhost:1027"
+            },
+            "api_token": {
+                "description": "API 访问令牌",
+                "hint": "MSLX 的 Bearer Token，形如 your-secret-token。请妥善保管，切勿泄露。",
+                "type": "string",
+                "default": "",
+                "obvious_hint": true
+            }
+        }
+    }
+}
