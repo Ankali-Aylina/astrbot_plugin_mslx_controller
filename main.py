@@ -22,10 +22,17 @@ class MSLXAPIController(Star):
         self.headers = {"x-api-key": api_key}
         logger.info(f"[MSLX控制器] 已加载配置，API地址: {self.api_root}")
 
+    def _check_admin(self, event: AstrMessageEvent) -> bool:
+        """检查用户是否为管理员"""
+        return event.role == "admin"
+
     # ==================== 服务器实例控制 ====================
     @filter.command("服务器列表")
     async def list_servers(self, event: AstrMessageEvent):
         '''获取MSLX服务器实例列表 (用法: /服务器列表)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{self.api_root}/api/instance/list", headers=self.headers)
@@ -56,6 +63,9 @@ class MSLXAPIController(Star):
     @filter.command("启动服务器")
     async def start_server(self, event: AstrMessageEvent, instance_id: str):
         '''启动服务器实例 (用法: /启动服务器 <实例ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         if not instance_id.isdigit():
             yield event.plain_result("❌ 实例ID必须是数字。请使用 `/服务器列表` 查看ID。")
             return
@@ -80,6 +90,9 @@ class MSLXAPIController(Star):
     @filter.command("停止服务器")
     async def stop_server(self, event: AstrMessageEvent, instance_id: str):
         '''停止服务器实例 (用法: /停止服务器 <实例ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         if not instance_id.isdigit():
             yield event.plain_result("❌ 实例ID必须是数字。")
             return
@@ -104,6 +117,9 @@ class MSLXAPIController(Star):
     @filter.command("重启服务器")
     async def restart_server(self, event: AstrMessageEvent, instance_id: str):
         '''重启服务器实例 (用法: /重启服务器 <实例ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         if not instance_id.isdigit():
             yield event.plain_result("❌ 实例ID必须是数字。请使用 `/服务器列表` 查看ID。")
             return
@@ -129,6 +145,9 @@ class MSLXAPIController(Star):
     @filter.command("隧道列表")
     async def list_tunnels(self, event: AstrMessageEvent):
         '''获取MSLX隧道列表 (用法: /隧道列表)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{self.api_root}/api/frp/list", headers=self.headers)
@@ -160,6 +179,9 @@ class MSLXAPIController(Star):
     @filter.command("隧道详情")
     async def tunnel_info(self, event: AstrMessageEvent, tunnel_id: str):
         '''获取隧道详细信息 (用法: /隧道详情 <隧道ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         if not tunnel_id.isdigit():
             yield event.plain_result("❌ 隧道ID必须是数字。请使用 `/隧道列表` 查看ID。")
             return
@@ -200,6 +222,9 @@ class MSLXAPIController(Star):
     @filter.command("启动隧道")
     async def start_tunnel(self, event: AstrMessageEvent, tunnel_id: str):
         '''启动隧道 (用法: /启动隧道 <隧道ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         if not tunnel_id.isdigit():
             yield event.plain_result("❌ 隧道ID必须是数字。")
             return
@@ -220,6 +245,9 @@ class MSLXAPIController(Star):
     @filter.command("停止隧道")
     async def stop_tunnel(self, event: AstrMessageEvent, tunnel_id: str):
         '''停止隧道 (用法: /停止隧道 <隧道ID>)'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         if not tunnel_id.isdigit():
             yield event.plain_result("❌ 隧道ID必须是数字。")
             return
@@ -240,6 +268,9 @@ class MSLXAPIController(Star):
     @filter.command("重启隧道")
     async def restart_tunnel(self, event: AstrMessageEvent, tunnel_id: str):
         '''重启隧道 (用法: /重启隧道 <隧道ID>) - 先停止再启动，中间等待1秒'''
+        if not self._check_admin(event):
+            yield event.plain_result("❌ 权限不足：仅管理员可使用此命令。")
+            return
         if not tunnel_id.isdigit():
             yield event.plain_result("❌ 隧道ID必须是数字。")
             return
